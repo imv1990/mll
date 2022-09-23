@@ -121,6 +121,10 @@ void Method::writeDeclTo(raw_indented_ostream &os) const {
   methodSignature.writeDeclTo(os);
   if (isConst())
     os << " const";
+
+  if (overrideFlag) {
+    os << " override";
+  }
   if (!isInline()) {
     os << ";\n";
     return;

@@ -1,0 +1,1 @@
+add_mll_dialect(OMP omp)

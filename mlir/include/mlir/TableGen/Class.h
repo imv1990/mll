@@ -134,7 +134,7 @@ public:
   /// Create a method signature with a return type, a method name, and a
   /// variadic list of parameters.
   template <typename RetTypeT, typename NameT, typename... Parameters>
-  MethodSignature(RetTypeT &&retType, NameT &&name, Parameters &&...parameters)
+  MethodSignature(RetTypeT &&retType, NameT &&name, Parameters &&... parameters)
       : MethodSignature(std::forward<RetTypeT>(retType),
                         std::forward<NameT>(name),
                         ArrayRef<MethodParameter>(
@@ -307,17 +307,17 @@ public:
   /// parameters. The parameteres may be passed as a list or as a variadic pack.
   template <typename RetTypeT, typename NameT, typename... Args>
   Method(RetTypeT &&retType, NameT &&name, Properties properties,
-         Args &&...args)
+         Args &&... args)
       : properties(properties),
         methodSignature(std::forward<RetTypeT>(retType),
                         std::forward<NameT>(name), std::forward<Args>(args)...),
-        methodBody(properties & Declaration) {}
+        methodBody(properties & Declaration), overrideFlag(false) {}
   /// Create a method with a return type, a name, method properties, and a list
   /// of parameters.
   Method(StringRef retType, StringRef name, Properties properties,
          std::initializer_list<MethodParameter> params)
       : properties(properties), methodSignature(retType, name, params),
-        methodBody(properties & Declaration) {}
+        methodBody(properties & Declaration), overrideFlag(false) {}
 
   // Define move constructor and assignment operator to prevent copying.
   Method(Method &&) = default;
@@ -349,6 +349,8 @@ public:
     return methodSignature.makesRedundant(other.methodSignature);
   }
 
+  void markOverride() { overrideFlag = true; }
+
   /// Write the method declaration, including the definition if inline.
   void writeDeclTo(raw_indented_ostream &os) const override;
 
@@ -363,6 +365,8 @@ protected:
   MethodSignature methodSignature;
   /// The body of the method, if it has one.
   MethodBody methodBody;
+  /// Add override symbol to method.
+  bool overrideFlag;
 };
 
 /// This enum describes C++ inheritance visibility.
@@ -378,7 +382,7 @@ public:
   /// Create a constructor for a given class, with method properties, and
   /// parameters specified either as a list of a variadic pack.
   template <typename NameT, typename... Args>
-  Constructor(NameT &&className, Properties properties, Args &&...args)
+  Constructor(NameT &&className, Properties properties, Args &&... args)
       : Method("", std::forward<NameT>(className), properties,
                std::forward<Args>(args)...) {}
 
@@ -582,7 +586,7 @@ public:
   /// redundant by it. Returns null if the constructor was not added. Else,
   /// returns a pointer to the new constructor.
   template <Method::Properties Properties = Method::None, typename... Args>
-  Constructor *addConstructor(Args &&...args) {
+  Constructor *addConstructor(Args &&... args) {
     return addConstructorAndPrune(Constructor(getClassName(),
                                               Properties | Method::Constructor,
                                               std::forward<Args>(args)...));
@@ -594,7 +598,7 @@ public:
   template <Method::Properties Properties = Method::None, typename RetTypeT,
             typename NameT, typename... Args>
   Method *addMethod(RetTypeT &&retType, NameT &&name,
-                    Method::Properties properties, Args &&...args) {
+                    Method::Properties properties, Args &&... args) {
     return addMethodAndPrune(
         Method(std::forward<RetTypeT>(retType), std::forward<NameT>(name),
                Properties | properties, std::forward<Args>(args)...));
@@ -603,7 +607,7 @@ public:
   /// Add a method with statically-known properties.
   template <Method::Properties Properties = Method::None, typename RetTypeT,
             typename NameT, typename... Args>
-  Method *addMethod(RetTypeT &&retType, NameT &&name, Args &&...args) {
+  Method *addMethod(RetTypeT &&retType, NameT &&name, Args &&... args) {
     return addMethod(std::forward<RetTypeT>(retType), std::forward<NameT>(name),
                      Properties, std::forward<Args>(args)...);
   }
@@ -611,7 +615,7 @@ public:
   /// Add a static method.
   template <Method::Properties Properties = Method::None, typename RetTypeT,
             typename NameT, typename... Args>
-  Method *addStaticMethod(RetTypeT &&retType, NameT &&name, Args &&...args) {
+  Method *addStaticMethod(RetTypeT &&retType, NameT &&name, Args &&... args) {
     return addMethod<Properties | Method::Static>(
         std::forward<RetTypeT>(retType), std::forward<NameT>(name),
         std::forward<Args>(args)...);
@@ -621,7 +625,7 @@ public:
   template <Method::Properties Properties = Method::None, typename RetTypeT,
             typename NameT, typename... Args>
   Method *addStaticInlineMethod(RetTypeT &&retType, NameT &&name,
-                                Args &&...args) {
+                                Args &&... args) {
     return addMethod<Properties | Method::StaticInline>(
         std::forward<RetTypeT>(retType), std::forward<NameT>(name),
         std::forward<Args>(args)...);
@@ -630,7 +634,7 @@ public:
   /// Add an inline method.
   template <Method::Properties Properties = Method::None, typename RetTypeT,
             typename NameT, typename... Args>
-  Method *addInlineMethod(RetTypeT &&retType, NameT &&name, Args &&...args) {
+  Method *addInlineMethod(RetTypeT &&retType, NameT &&name, Args &&... args) {
     return addMethod<Properties | Method::Inline>(
         std::forward<RetTypeT>(retType), std::forward<NameT>(name),
         std::forward<Args>(args)...);
@@ -639,7 +643,7 @@ public:
   /// Add a const method.
   template <Method::Properties Properties = Method::None, typename RetTypeT,
             typename NameT, typename... Args>
-  Method *addConstMethod(RetTypeT &&retType, NameT &&name, Args &&...args) {
+  Method *addConstMethod(RetTypeT &&retType, NameT &&name, Args &&... args) {
     return addMethod<Properties | Method::Const>(
         std::forward<RetTypeT>(retType), std::forward<NameT>(name),
         std::forward<Args>(args)...);
@@ -648,7 +652,7 @@ public:
   /// Add a declaration for a method.
   template <Method::Properties Properties = Method::None, typename RetTypeT,
             typename NameT, typename... Args>
-  Method *declareMethod(RetTypeT &&retType, NameT &&name, Args &&...args) {
+  Method *declareMethod(RetTypeT &&retType, NameT &&name, Args &&... args) {
     return addMethod<Properties | Method::Declaration>(
         std::forward<RetTypeT>(retType), std::forward<NameT>(name),
         std::forward<Args>(args)...);
@@ -658,7 +662,7 @@ public:
   template <Method::Properties Properties = Method::None, typename RetTypeT,
             typename NameT, typename... Args>
   Method *declareStaticMethod(RetTypeT &&retType, NameT &&name,
-                              Args &&...args) {
+                              Args &&... args) {
     return addMethod<Properties | Method::StaticDeclaration>(
         std::forward<RetTypeT>(retType), std::forward<NameT>(name),
         std::forward<Args>(args)...);
@@ -700,7 +704,7 @@ public:
   /// Add a declaration. The declaration is appended directly to the list of
   /// class declarations.
   template <typename DeclT, typename... Args>
-  DeclT *declare(Args &&...args) {
+  DeclT *declare(Args &&... args) {
     auto decl = std::make_unique<DeclT>(std::forward<Args>(args)...);
     auto *ret = decl.get();
     declarations.push_back(std::move(decl));
